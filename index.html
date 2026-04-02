@@ -767,66 +767,9 @@ function calcRPM(speed, gear){
   return (speed / base) * 3000;
 }
 
-// ---------- MASS FACTOR ----------
-function massFactorForGear(gear, vehicleMass) {
-  const base = {3:1.11,4:1.08,5:1.064,6:1.055,7:1.05}[gear];
-  return (base - 1) * (1500 / vehicleMass) + 1;
-}
 
-// ---------- MAIN POWER ----------
-function calculateMotorPowerPS(
-  vehicleMass,
-  driverMass,
-  massFactor,
-  time,
-  midSpeedKmh,
-  cw,
-  area,
-  pressure,
-  temp,
-  drivetrainForce,
-  slopePercent
-) {
-  const g = 9.81;
-  const v = midSpeedKmh / 3.6;
-  const a = (10 / 3.6) / time;
 
-  const airDensity =
-    (pressure * 100) / (287.05 * (temp + 273.15));
 
-  const F =
-    (vehicleMass * massFactor + driverMass) * a +
-    (vehicleMass + driverMass) * g * (slopePercent / 100) +
-    (airDensity / 2) * cw * area * v * v +
-    drivetrainForce;
-
-  return (F * v / 1000) * 1.36;
-}
-
-// ---------- DRIVETRAIN ----------
-function calculateDrivetrainFinal(vehicleMass, driverMass, ps1, dsg, awd) {
-  let F1 = 975;
-
-  if (!dsg) F1 -= 50;
-  if (!awd) F1 -= 75;
-
-  F1 -= 0.017 * 1600 * 9.81;
-
-  let exponent =
-    ps1 <= 1000 ? 0.7 :
-    ps1 >= 1600 ? 0.8 :
-    0.7 + (ps1 - 1000) * (0.1 / 600);
-
-  const F2 = F1 * Math.pow(ps1 / 400, exponent);
-  const F3 = F2 + 0.017 * (vehicleMass + driverMass) * 9.81;
-
-  let k =
-    ps1 <= 1000 ? 75 :
-    ps1 >= 1600 ? 100 :
-    75 + (ps1 - 1000) * (25 / 600);
-
-  return F3 + (ps1 - 400) / 400 * k;
-}
 
 // ---------- GRAPH ----------
 function drawGraph(results){
@@ -1227,237 +1170,115 @@ document.getElementById("gearRefBox").style.display = "none";
   window.lastResults = null;
 }
 // ---------- MAIN ----------
-function calc(){
+async function calc(){
 
   const name = document.getElementById("name").value;
 
-  const mass = getVal("mass");
-  const driver = getVal("driver");
-  const cw = getVal("cw");
-  const area = getVal("area");
-  const pressure = getVal("pressure");
-  const temp = getVal("temp");
-  const slope = getVal("slope");
-
-// ===== VALIDATION (NUR LEER CHECK) =====
-
-function isEmpty(id){
-  return document.getElementById(id).value.trim() === "";
-}
-
-// Pflichtfelder prüfen
-if (
-  isEmpty("mass") ||
-  isEmpty("driver") ||
-  isEmpty("cw") ||
-  isEmpty("area") ||
-  isEmpty("pressure") ||
-  isEmpty("temp") ||
-  isEmpty("slope")
-){
-  alert("Bitte alle Fahrzeug und Wetterdaten ausfüllen!");
-  return;
-}
-
-// Intervalle prüfen
-let hasInterval = false;
-
-for (let i = 60; i < 400; i += 10){
-  if (!isEmpty("t"+i)){
-    hasInterval = true;
+  function isEmpty(id){
+    return document.getElementById(id).value.trim() === "";
   }
-}
 
-if(!hasInterval){
-  alert("Mindestens ein Intervall eingeben!");
-  return;
-}
-  let results = [];
-  // ===== CHECK GEAR CONSISTENCY =====
-const usedGears = [];
-
-for (let i = 60; i < 400; i += 10){
-  const time = getVal("t"+i);
-  if(time > 0){
-    const gear = document.getElementById("g"+i).value;
-    usedGears.push(gear);
+  if (
+    isEmpty("mass") ||
+    isEmpty("driver") ||
+    isEmpty("cw") ||
+    isEmpty("area") ||
+    isEmpty("pressure") ||
+    isEmpty("temp") ||
+    isEmpty("slope")
+  ){
+    alert("Bitte alle Fahrzeug und Wetterdaten ausfüllen!");
+    return;
   }
-}
 
-const uniqueGears = [...new Set(usedGears)];
-singleGear = uniqueGears.length === 1;
+  let hasInterval = false;
+  for (let i = 60; i < 400; i += 10){
+    if (!isEmpty("t"+i)) hasInterval = true;
+  }
 
-  // =========================
-// GLOBAL BERECHNUNG (FIX)
-// =========================
+  if(!hasInterval){
+    alert("Mindestens ein Intervall eingeben!");
+    return;
+  }
 
-// 1️⃣ Alle PS sammeln
-let psList = [];
+  // 🔥 DATEN BAUEN
+  const data = {
+    token: "premium123",
 
-for (let i = 60; i < 400; i += 10){
-  const time = getVal("t"+i);
-  if (!time) continue;
+    mass: getVal("mass"),
+    driver: getVal("driver"),
+    cw: getVal("cw"),
+    area: getVal("area"),
+    pressure: getVal("pressure"),
+    temp: getVal("temp"),
+    slope: getVal("slope"),
 
-  const gear = parseInt(document.getElementById("g"+i).value);
-  const mid = i + 5;
+    dsg: dsg,
+    awd: awd,
+    showRpmNm: showRpmNm,
 
-  let ps1 = calculateMotorPowerPS(
-    mass,
-    driver,
-    massFactorForGear(gear, mass),
-    time,
-    mid,
-    cw,
-    area,
-    pressure,
-    temp,
-    100,
-    slope
-  );
+    intervals: [],
+    gearRefs: {}
+  };
 
-  psList.push(ps1);
-}
-
-if(psList.length === 0) return;
-
-// 2️⃣ Max PS nehmen
-let psCurrent = Math.max(...psList);
-let drivetrainFinal = 0;
-
-// 3️⃣ Iteration GLOBAL
-for (let x = 0; x < 5; x++) {
-
-  drivetrainFinal = calculateDrivetrainFinal(
-    mass,
-    driver,
-    psCurrent,
-    dsg,
-    awd
-  );
-
-  let newList = [];
-
+  // Intervalle
   for (let i = 60; i < 400; i += 10){
     const time = getVal("t"+i);
     if (!time) continue;
 
     const gear = parseInt(document.getElementById("g"+i).value);
-    const mid = i + 5;
 
-    let ps = calculateMotorPowerPS(
-      mass,
-      driver,
-      massFactorForGear(gear, mass),
-      time,
-      mid,
-      cw,
-      area,
-      pressure,
-      temp,
-      drivetrainFinal,
-      slope
-    );
-
-    newList.push(ps);
+    data.intervals.push({
+      label: `${i}-${i+10}`,
+      time: time,
+      gear: gear,
+      mid: i + 5
+    });
   }
 
-  const newMax = Math.max(...newList);
-
-  if (Math.abs(newMax - psCurrent) < 1) break;
-
-  psCurrent = newMax;
-}
-
-// =========================
-// FINAL RESULTS
-// =========================
-for (let i = 60; i < 400; i += 10){
-
-  const time = getVal("t"+i);
-  if (!time) continue;
-
-  const gear = parseInt(document.getElementById("g"+i).value);
-  const mid = i + 5;
-
-  const ps = calculateMotorPowerPS(
-    mass,
-    driver,
-    massFactorForGear(gear, mass),
-    time,
-    mid,
-    cw,
-    area,
-    pressure,
-    temp,
-    drivetrainFinal,
-    slope
-  );
-
-  let rpm = null;
-  let nm = null;
-
-  const raw = document.getElementById("g"+gear+"ref").value;
-  const kmh3000 = parseFloat(raw.replace(",", "."));
-
-  if (showRpmNm && !isNaN(kmh3000) && kmh3000 > 0) {
-    rpm = (mid / kmh3000) * 3000;
-    nm = (ps * 7023) / rpm;
+  // Gear refs
+  for(let g=3; g<=7; g++){
+    const val = getVal("g"+g+"ref");
+    if(val) data.gearRefs[g] = val;
   }
 
-  results.push({
-    label: `${i}-${i+10}`,
-    time: time.toFixed(2),
-    ps: Math.round(ps),
-    rpm: rpm !== null ? Math.round(rpm) : "-",
-    nm: nm !== null ? Math.round(nm) : "-"
+  // 🔥 API CALL
+  const res = await fetch("https://zeitenjagd-power-calculator.onrender.com/calc", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(data)
   });
-}
 
-  if(results.length === 0) return;
+  const server = await res.json();
 
-  const max = Math.max(...results.map(r=>r.ps));
-// ❌ Mehrere Gänge → RPM AUS
-if(!singleGear){
-  useRPM = false;
+  if(server.error){
+    alert(server.error);
+    return;
+  }
 
-  const btn = document.getElementById("axisBtn");
-  btn.innerText = "X-Achse: km/h";
-  btn.style.opacity = 0.5;
-} else {
-  document.getElementById("axisBtn").style.opacity = 1;
-}
-  
+  const results = server.results;
+  const max = server.max;
+
+  // 🔥 ALTEN CODE WEITER NUTZEN
   window.lastResults = results;
 
   let html = `
     <div class="subtitle" style="margin-top:30px;">MAXIMALE MOTORLEISTUNG</div>
-  <div class="big">${max} PS</div>
-  <h3>${name}</h3>
+    <div class="big">${max} PS</div>
+    <h3>${name}</h3>
+  `;
 
-  <div class="grid">
-    <div class="card">🚗 ${mass}kg</div>
-    <div class="card">🧍 ${driver}kg</div>
-    <div class="card">${awd ? "AWD ON" : "AWD OFF"}</div>
-
-    <div class="card">cw ${cw}</div>
-    <div class="card">A ${area} m²</div>
-    <div class="card">${dsg ? "DSG ON" : "DSG OFF"}</div>
-
-    <div class="card">🌬 ${pressure} mbar</div>
-    <div class="card">🌡 ${temp} °C</div>
-    <div class="card">📈 Slope ${slope}%</div>
-  </div>
-
-    <table class="${showRpmNm ? 'full' : 'compact'}">
+  html += `<table class="${showRpmNm ? 'full' : 'compact'}">
   <tr>
     <th>Intervall</th>
     <th>Zeit</th>
     <th>PS</th>
     ${showRpmNm ? "<th>Nm</th><th>RPM</th>" : ""}
-  </tr>
-  `;
+  </tr>`;
 
- results.forEach(r=>{
+  results.forEach(r=>{
 
   const isBest = r.ps === max;
 
@@ -1474,11 +1295,12 @@ if(!singleGear){
   html += "</table>";
 
   document.getElementById("result").innerHTML = html;
+
   showResultPage();
-  // 🔥 FIX: Graph erst zeichnen wenn sichtbar
-setTimeout(() => {
-  drawGraph(results);
-}, 50);
+
+  setTimeout(() => {
+    drawGraph(results);
+  }, 50);
 }
 window.onload = function(){
 
