@@ -1,0 +1,1570 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Zeitenjagd Power Calculator</title>
+
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+
+<style>
+body {
+  background: black;
+  color: white;
+  font-family: Arial;
+  text-align: center;
+}
+#exportArea {
+  padding: 30px 20px 40px 20px;
+}
+
+.container {
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 10px;
+}
+
+
+/* 📱 Handy */
+@media (max-width: 500px){
+  .container{
+    padding: 8px;
+  }
+}
+
+/* 📲 Tablet */
+@media (min-width: 700px){
+  .container{
+    padding: 20px;
+  }
+}
+
+.formRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.formRow.single {
+  grid-template-columns: 1fr;
+}
+
+/* 🔥 WICHTIG: verhindert Überlappung */
+input, select {
+  width: 100%;
+  padding: 12px;
+  margin: 0;
+  box-sizing: border-box;
+}
+
+input, select {
+  width: 100%;
+  padding: 12px;
+  margin: 6px 0;
+  background: #111;
+  border: 1px solid #444;
+  color: white;
+  border-radius: 6px;
+}
+
+button {
+  width: 100%;
+  padding: 14px;
+  margin-top: 15px;
+  margin-bottom:40px; /* 🔥 NEU */
+  background: linear-gradient(90deg,#6c4cff,#9b59ff);
+  border: none;
+  color: white;
+  font-weight: bold;
+  border-radius: 10px;
+}
+
+.intervalBtn {
+  width: auto !important;
+  padding: 6px 20px !important;
+  margin: 0 !important;
+  font-size: 12px;
+  border-radius: 6px;
+  background: #333 !important;   /* 🔥 DEFAULT GRAU */
+}
+
+.intervalBtn.active {
+  background: #2ecc71 !important; /* 🔥 AKTIV GRÜN */
+}
+
+.big {
+  font-size: 50px;
+  color: red;
+  font-weight: bold;
+}
+.resetBtn {
+  background: white !important;
+  color: red !important;
+  font-weight: bold;
+  border: 2px solid red;
+}
+canvas {
+  width: 100%;
+  height: 320px;
+  margin-top: 40px;
+  margin-bottom: 40px;
+  background: #111;
+  border-radius: 12px;
+}
+@media (min-width: 900px) {
+  .container {
+    max-width: 900px;
+  }
+
+  canvas {
+    height: 450px;
+  }
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3,1fr);
+  gap: 8px;
+  margin-top: 30px;
+  margin-bottom: 40px;
+}
+
+@media (max-width: 500px){
+  .grid {
+    grid-template-columns: repeat(3,1fr); /* ✅ bleibt 3 */
+    gap: 8px;
+  }
+
+  .card{
+    font-size: 11px;
+    padding: 8px;
+  }
+}
+@media (max-width: 500px){
+  table {
+    font-size: 14px;
+  }
+
+  th, td {
+    padding: 10px;
+  }
+}
+.card {
+  border: 1px solid #333;
+  padding: 10px;
+  border-radius: 8px;
+  font-size: 12px;
+}
+
+table {
+  width: 100%;
+  margin-top: 20px;
+  border-collapse: collapse;
+}
+
+th {
+  background: #111;
+  padding: 10px;
+}
+
+td {
+  padding: 10px;
+  border-bottom: 1px solid #333;
+}
+
+.highlight {
+  color: red;
+  font-weight: bold;
+}
+.highlight-row {
+  border-bottom: 2px solid red;
+}
+table.compact th,
+table.compact td {
+  width: 33%;
+}
+
+table.full th,
+table.full td {
+  width: 20%;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<div id="inputPage">
+
+<h1>Zeitenjagd Power Calculator</h1>
+
+<h3>Fahrzeug / Wetter</h3>
+
+<input id="name" placeholder="Fahrzeugname">
+
+<div class="formRow">
+  <input id="mass" placeholder="Fahrzeug kg">
+  <input id="driver" placeholder="Fahrer kg">
+</div>
+
+<div style="position:relative;">
+  <input id="carSearch" placeholder="Fahrzeug suchen (optional)">
+  <div id="carDropdown" style="
+    position:absolute;
+    width:100%;
+    max-height:200px;
+    overflow-y:auto;
+    background:#111;
+    border:1px solid #444;
+    display:none;
+    z-index:10;
+  "></div>
+</div>
+
+<div class="formRow">
+  <input id="cw" placeholder="cw-Wert">
+  <input id="area" placeholder="Stirnfläche m²">
+</div>
+
+<div class="formRow">
+  <input id="pressure" placeholder="Luftdruck mbar">
+  <input id="temp" placeholder="Temperatur °C">
+</div>
+
+<div class="formRow single">
+  <input id="slope" placeholder="Slope %">
+</div>
+
+<div style="display:flex; gap:10px; margin-top:10px">
+  <button id="awdBtn" onclick="toggleAWD()">AWD ON</button>
+  <button id="dsgBtn" onclick="toggleDSG()">DSG ON</button>
+</div>
+
+<button id="rpmBtn" onclick="toggleRpmNm()">RPM / Nm optional</button>
+
+<div id="gearRefBox" style="display:none;">
+  <h3>Gang Referenz (km/h bei 3000 RPM)</h3>
+  <input id="g3ref" placeholder="Gang 3">
+  <input id="g4ref" placeholder="Gang 4">
+  <input id="g5ref" placeholder="Gang 5">
+  <input id="g6ref" placeholder="Gang 6">
+  <input id="g7ref" placeholder="Gang 7">
+</div>
+
+<h3>Intervalle</h3>
+
+<div style="display:flex; gap:8px; margin-bottom:10px; flex-wrap:wrap;">
+<button id="btn60" class="intervalBtn" onclick="toggle60()">60-100</button>
+<button id="btn200" class="intervalBtn" onclick="toggle200()">200-300</button>
+<button id="btn300" class="intervalBtn" onclick="toggle300()">300-400</button>
+</div>
+
+<div id="intervals"></div>
+  
+<button onclick="calc()">Berechnen</button>
+
+<button onclick="resetAll()" class="resetBtn">Reset</button>
+
+</div> <!-- inputPage ENDE -->
+
+<div id="resultPage" style="display:none;">
+
+  <div id="exportArea">
+
+  <h1 style="margin-bottom:20px;">Zeitenjagd Power Calculator</h1>
+    
+  <div id="result"></div>
+
+  <h2 style="margin-top:40px;">Leistungskurve</h2>
+
+  <canvas id="graph"></canvas>
+
+  </div> <!-- exportArea ENDE -->
+
+  <button id="axisBtn" onclick="toggleAxis()">X-Achse: km/h</button>
+
+  <button onclick="saveResult()">Speichern</button>
+
+  <button onclick="backToInput()" class="resetBtn">Zurück</button>
+
+</div>
+
+
+<script>
+function formatNumericInput(el, allowNegative = false){
+
+  let value = el.value;
+
+  // 🔥 Komma → Punkt
+  value = value.replace(/,/g, ".");
+
+  let result = "";
+  let dotUsed = false;
+  let minusUsed = false;
+
+  for(let i = 0; i < value.length; i++){
+    const c = value[i];
+
+    if(/[0-9]/.test(c)){
+      result += c;
+    }
+
+    else if(c === "." && !dotUsed){
+      result += ".";
+      dotUsed = true;
+    }
+
+    else if(c === "-" && allowNegative && i === 0 && !minusUsed){
+      result += "-";
+      minusUsed = true;
+    }
+  }
+
+  el.value = result;
+}
+const vehiclePresets = [
+  {name:"Audi 200", cw:0.33, area:2.14},
+  {name:"Audi A1 40", cw:0.31, area:2.07},
+  {name:"Audi A3 8L", cw:0.33, area:2.08},
+  {name:"Audi A4", cw:0.31, area:2.03},
+  {name:"Audi A5 252Ps quattro", cw:0.29, area:2.2},
+  {name:"Audi A5 F5 Cabrio", cw:0.31, area:2.17},
+  {name:"Audi A6 Allroad 3.0 TDI C7", cw:0.30, area:2.33},
+  {name:"Audi A6 C6 3.0 tfsi 290", cw:0.32, area:2.26},
+  {name:"Audi A7 3.0 TFSI", cw:0.28, area:2.29},
+  {name:"Audi Q3 45 TFSI", cw:0.33, area:2.44},
+  {name:"Audi Q5 50 TFSIe", cw:0.31, area:2.64},
+  {name:"Audi R8", cw:0.36, area:1.99},
+  {name:"Audi RS Q3 367Ps Performance", cw:0.34, area:2.44},
+  {name:"Audi RS Q3 400 Stock", cw:0.35, area:2.46},
+  {name:"Audi RS3 8P", cw:0.36, area:2.16},
+  {name:"Audi RS3 8V Limousine", cw:0.33, area:2.14},
+  {name:"Audi RS3 8V Sportback", cw:0.34, area:2.16},
+  {name:"Audi Rs3 8Y Limousine", cw:0.32, area:2.22},
+  {name:"Audi Rs3 8Y Sportback", cw:0.34, area:2.22},
+  {name:"Audi RS4 OPF Avant", cw:0.33, area:2.24},
+  {name:"Audi RS5 9B Sportback", cw:0.32, area:2.18},
+  {name:"Audi RS5 Coupe", cw:0.31, area:2.18},
+  {name:"Audi RS6 C7", cw:0.35, area:2.4},
+  {name:"Audi RS6 C8", cw:0.35, area:2.4},
+  {name:"Audi RS Q8", cw:0.37, area:2.84},
+  {name:"Audi S1", cw:0.34, area:2.04},
+  {name:"Audi S3 8L", cw:0.33, area:2.06},
+  {name:"Audi S3 8P", cw:0.33, area:2.13},
+  {name:"Audi S3 8V Cabrio", cw:0.33, area:2.11},
+  {name:"Audi S3 8V Limousine", cw:0.31, area:2.12},
+  {name:"Audi S3 8V Sportback", cw:0.31, area:2.19},
+  {name:"Audi S3 8Y Limousine", cw:0.29, area:2.17},
+  {name:"Audi S3 8Y Sportback", cw:0.34, area:2.17},
+  {name:"Audi S4 Avant B8", cw:0.33, area:2.2},
+  {name:"Audi S4 B9", cw:0.28, area:2.2},
+  {name:"Audi S4 B9 Avant", cw:0.31, area:2.2},
+  {name:"Audi S5 2008 Coupe", cw:0.30, area:2.17},
+  {name:"Audi S5 B9", cw:0.31, area:2.17},
+  {name:"Audi S5 B9 cabrio", cw:0.30, area:2.16},
+  {name:"Audi S6C7", cw:0.32, area:2.33},
+  {name:"Audi S8 D2 360Ps", cw:0.29, area:2.25},
+  {name:"Audi S8 D4 2016", cw:0.28, area:2.41},
+  {name:"Audi SQ2", cw:0.34, area:2.29},
+  {name:"Audi SQ7", cw:0.37, area:2.87},
+  {name:"Audi SQ7 4.0 Tfsi", cw:0.33, area:2.87},
+  {name:"Audi TT", cw:0.30, area:2.09},
+  {name:"Audi TT 8J", cw:0.31, area:2.09},
+  {name:"Audi TT 8N", cw:0.34, area:1.99},
+  {name:"Audi TT RS 8J", cw:0.32, area:2.09},
+  {name:"Audi TT RS 8S", cw:0.32, area:2.1},
+  {name:"Audi TT RS 8S Roadster", cw:0.35, area:2.1},
+  {name:"Audi TT S 8S", cw:0.31, area:2.09},
+  {name:"Audi TTRS Cabrio", cw:0.35, area:2.1},
+
+  {name:"BMW M340i", cw:0.29, area:2.2},
+  {name:"BMW 135i Coupe N54", cw:0.33, area:2.1},
+  {name:"BMW 140i", cw:0.35, area:2.14},
+  {name:"BMW 318 E36", cw:0.33, area:1.96},
+  {name:"BMW 320i G20", cw:0.23, area:2.22},
+  {name:"BMW 325D E91", cw:0.31, area:2.17},
+  {name:"BMW 330 xD", cw:0.31, area:2.17},
+  {name:"BMW 330d Coupe E92", cw:0.31, area:2.12},
+  {name:"BMW 330d G21", cw:0.27, area:2.22},
+  {name:"BMW 335d F31", cw:0.32, area:2.2},
+  {name:"BMW 335i E92", cw:0.31, area:2.08},
+  {name:"BMW 340i G21", cw:0.29, area:2.22},
+  {name:"BMW 420i", cw:0.28, area:2.16},
+  {name:"BMW 430d Cabrio G23", cw:0.28, area:2.19},
+  {name:"BMW 440i F32", cw:0.30, area:2.16},
+  {name:"BMW 440i Xdrive", cw:0.28, area:2.29},
+  {name:"BMW 525i E34 Limo", cw:0.31, area:2.1},
+  {name:"BMW 530d F10", cw:0.28, area:2.35},
+  {name:"BMW 535d E60", cw:0.28, area:2.26},
+  {name:"BMW 550i", cw:0.28, area:2.35},
+  {name:"BMW E90 335d", cw:0.29, area:2.17},
+  {name:"BMW i4 M50", cw:0.25, area:2.33},
+  {name:"BMW M2 G87", cw:0.34, area:2.28},
+  {name:"BMW M2 N55", cw:0.35, area:2.21},
+  {name:"BMW M2 Competition S55", cw:0.36, area:2.21},
+  {name:"BMW M240i 2016", cw:0.34, area:2.14},
+  {name:"BMW M240i 2022", cw:0.30, area:2.17},
+  {name:"BMW M3 E90", cw:0.31, area:2.23},
+  {name:"BMW M3 E92", cw:0.31, area:2.17},
+  {name:"BMW M3 E93 cabrio", cw:0.32, area:2.17},
+  {name:"BMW M3 F80 2015", cw:0.34, area:2.29},
+  {name:"BMW M3 G80", cw:0.33, area:2.34},
+  {name:"BMW M4 F83 CP", cw:0.34, area:2.23},
+  {name:"BMW M4 G80", cw:0.34, area:2.29},
+  {name:"BMW M5 F10", cw:0.33, area:2.4},
+  {name:"BMW M5 F90", cw:0.31, area:2.42},
+  {name:"BMW M5 F90 CP", cw:0.32, area:2.42},
+  {name:"BMW M5 F90 CS", cw:0.33, area:2.42},
+  {name:"BMW M5 2020 OPF", cw:0.35, area:2.2},
+  {name:"BMW M5 G99 Touring", cw:0.34, area:2.56},
+  {name:"BMW M8 CP Cabrio", cw:0.35, area:2.22},
+  {name:"BMW M8 CP Coupe", cw:0.33, area:2.25},
+  {name:"BMW X3 M40d 2018", cw:0.31, area:2.65},
+  {name:"BMW X3M F97 Comp", cw:0.36, area:2.69},
+  {name:"BMW X4M", cw:0.36, area:2.64},
+  {name:"BMW X5 E70", cw:0.37, area:2.87},
+  {name:"BMW Z4 2008 N54 35i", cw:0.35, area:1.96},
+  {name:"BMW Z4 2019", cw:0.31, area:2.07},
+  {name:"BMW Z4 35i N54", cw:0.34, area:1.96},
+
+  {name:"Chevrolet Camaro ZL1", cw:0.34, area:2.3},
+  {name:"Chevrolet Corvette C5", cw:0.30, area:1.96},
+  {name:"Chevrolet Corvette C5 Z06", cw:0.31, area:1.96},
+  {name:"Chevrolet Corvette C5 Cabrio", cw:0.32, area:1.96},
+  {name:"Chevrolet Corvette C6", cw:0.295, area:2.0},
+  {name:"Chevrolet Corvette C6 Z06", cw:0.34, area:2.06},
+  {name:"Chevrolet Corvette C6 ZR1", cw:0.35, area:2.06},
+  {name:"Chevrolet Corvette C7", cw:0.34, area:2.02},
+  {name:"Chevrolet Corvette C7 Z06 AERO 1", cw:0.375, area:2.08},
+  {name:"Chevrolet Corvette C7 Z06 AERO 2", cw:0.41, area:2.08},
+  {name:"Chevrolet Corvette C7 Z06 AERO 3", cw:0.52, area:2.08},
+  {name:"Chevrolet Corvette C8", cw:0.39, area:2.05},
+
+  {name:"Cupra Ateca", cw:0.36, area:2.48},
+  {name:"Cupra Formentor VZ4", cw:0.35, area:2.4},
+  {name:"Cupra Leon KL 2022", cw:0.29, area:2.22},
+  {name:"Curpa Formentor VZ5", cw:0.35, area:2.4},
+
+  {name:"Dodge Challenger", cw:0.38, area:2.76},
+
+  {name:"Ford Fiesta ST", cw:0.32, area:2.25},
+  {name:"Ford Focus RS MK3", cw:0.34, area:2.3},
+  {name:"Ford Focus ST MK3", cw:0.32, area:2.25},
+  {name:"Ford Focus ST Mk4", cw:0.32, area:2.25},
+
+  {name:"Honda Civic type R fk2", cw:0.29, area:2.33},
+  {name:"Honda Civic Type R FK8", cw:0.28, area:2.32},
+  {name:"Honda Civic type R FN2", cw:0.32, area:1.93},
+  {name:"Honda Type R", cw:0.28, area:2.32},
+
+  {name:"Hyundai i30N", cw:0.33, area:2.23},
+
+  {name:"Lamborghini Huracan", cw:0.38, area:1.92},
+
+  {name:"McLaren 570S", cw:0.32, area:2.4},
+  {name:"McLaren 720S", cw:0.39, area:1.97},
+
+  {name:"Mercedes A35 AMG", cw:0.27, area:2.19},
+  {name:"Mercedes A45 AMG W176", cw:0.34, area:2.21},
+  {name:"Mercedes A45S AMG W177", cw:0.35, area:2.22},
+  {name:"Mercedes AMG CLA 45 S AMG", cw:0.31, area:2.23},
+  {name:"Mercedes AMG GTR", cw:0.35, area:2.23},
+  {name:"Mercedes AMG GTR Pro", cw:0.38, area:2.23},
+  {name:"Mercedes AMG GTS", cw:0.37, area:2.13},
+  {name:"Mercedes C W202", cw:0.31, area:2.05},
+  {name:"Mercedes C350 CDI W204", cw:0.30, area:2.17},
+  {name:"Mercedes C43 AMG", cw:0.26, area:2.16},
+  {name:"Mercedes C63S AMG Limo", cw:0.36, area:2.13},
+  {name:"Mercedes C63S AMG T Modell", cw:0.37, area:2.13},
+  {name:"Mercedes C63S Cabrio", cw:0.35, area:2.2},
+  {name:"Mercedes CLA 35 AMG", cw:0.25, area:2.19},
+  {name:"Mercedes E350 CDI", cw:0.29, area:2.31},
+  {name:"Mercedes G63 AMG", cw:0.53, area:2.97},
+  {name:"Mercedes SLK 2008", cw:0.32, area:1.93},
+
+  {name:"Mini", cw:0.35, area:1.97},
+
+  {name:"Nissan R34 GTR", cw:0.36, area:1.91},
+
+  {name:"Opel Astra J", cw:0.35, area:2.28},
+  {name:"Opel Corsa A", cw:0.35, area:1.71},
+
+  {name:"Porsche 911 turbo S", cw:0.34, area:2.07},
+  {name:"Porsche 911.2 Carrera 4", cw:0.31, area:2.05},
+  {name:"Porsche 911.2 GT2 RS", cw:0.35, area:2.14},
+  {name:"Porsche 911.2 Turbo S", cw:0.31, area:2.07},
+  {name:"Porsche Boxster 718", cw:0.31, area:2.01},
+  {name:"Porsche Cayman GT4", cw:0.32, area:2.0},
+  {name:"Porsche Cayman S", cw:0.31, area:2.01},
+  {name:"Porsche Panamera 4S V8 Diesel", cw:0.31, area:2.01},
+  {name:"Porsche Taycan", cw:0.26, area:2.33},
+
+  {name:"Renault Megane Rs Trophy", cw:0.33, area:2.21},
+
+  {name:"Seat Cupra Leon 1P", cw:0.32, area:2.17},
+  {name:"Seat Ibiza 2016", cw:0.33, area:2.01},
+  {name:"Seat Ibiza 6P", cw:0.32, area:2.04},
+  {name:"Seat Leon 5F Cupra", cw:0.32, area:2.19},
+  {name:"Seat Leon Cupra ST", cw:0.33, area:2.21},
+
+  {name:"Skoda Oktavia 4 RS Combi", cw:0.28, area:2.25},
+  {name:"Skoda Oktavia 4 RS Limo", cw:0.26, area:2.25},
+  {name:"Skoda Oktavia RS", cw:0.32, area:2.24},
+  {name:"Skoda Superb", cw:0.28, area:2.26},
+  {name:"Skoda Superb Kombi Gen4", cw:0.31, area:2.2},
+  {name:"Skoda Superb Limo 2019 OPF", cw:0.29, area:2.2},
+
+  {name:"Subaru WRX STI", cw:0.34, area:2.36},
+
+  {name:"VW Arteon R Shootingbrake", cw:0.26, area:2.33},
+  {name:"VW Bora Kombi", cw:0.31, area:2.11},
+  {name:"VW Golf 2 VT6 turbo", cw:0.35, area:1.89},
+  {name:"VW Golf 3 VR6 + GTI 1.8", cw:0.33, area:2.04},
+  {name:"VW Golf 4", cw:0.31, area:2.1},
+  {name:"VW Golf 5 1.4 GT", cw:0.32, area:2.22},
+  {name:"VW Golf 5 GTI", cw:0.32, area:2.22},
+  {name:"VW Golf 5 GTI Edi 30", cw:0.32, area:2.22},
+  {name:"VW Golf 5 r32", cw:0.34, area:2.21},
+  {name:"VW Golf 6 R", cw:0.34, area:2.23},
+  {name:"VW Golf 7 GTI", cw:0.30, area:2.19},
+  {name:"VW Golf 7 R", cw:0.31, area:2.19},
+  {name:"VW Golf 8 GTI", cw:0.29, area:2.22},
+  {name:"VW Golf 8 R", cw:0.32, area:2.22},
+
+  {name:"VW Passat B8 Limousine", cw:0.30, area:2.3},
+  {name:"VW Passat B8 Variant", cw:0.31, area:2.3},
+  {name:"VW Phaeton 3.0 TDI", cw:0.31, area:2.36},
+
+  {name:"VW Polo 4 9N3", cw:0.32, area:2.04},
+  {name:"VW Polo 5 WRC", cw:0.33, area:2.1},
+  {name:"VW Polo 6C GTI", cw:0.35, area:2.14},
+  {name:"VW Polo AW GTI", cw:0.31, area:2.1},
+
+  {name:"VW Scirocco", cw:0.34, area:2.14},
+  {name:"VW Tiguan R Gen4", cw:0.32, area:2.54},
+  {name:"VW Touran", cw:0.32, area:2.52},
+  {name:"VW Troc R", cw:0.35, area:2.4},
+  {name:"VW UP GTI", cw:0.32, area:2.07}
+];
+function initCarSearch(){
+
+  const input = document.getElementById("carSearch");
+  const dropdown = document.getElementById("carDropdown");
+
+  function renderList(filter = ""){
+
+    dropdown.innerHTML = "";
+
+    const val = filter.toLowerCase();
+
+    const list = vehiclePresets
+      .filter(v => v.name.toLowerCase().includes(val))
+      .sort((a,b)=> a.name.localeCompare(b.name)); // 🔥 optional sauber
+
+    list.forEach(v=>{
+
+      const item = document.createElement("div");
+
+      item.textContent = v.name;
+      item.style.padding = "10px";
+      item.style.cursor = "pointer";
+
+      item.onmouseenter = ()=> item.style.background = "#222";
+      item.onmouseleave = ()=> item.style.background = "transparent";
+
+      item.onclick = ()=>{
+        input.value = v.name;
+
+        document.getElementById("cw").value = v.cw;
+        document.getElementById("area").value = v.area;
+
+        dropdown.style.display = "none";
+      };
+
+      dropdown.appendChild(item);
+    });
+
+    dropdown.style.display = "block";
+  }
+
+  // 🔥 TIP → FILTERN
+  input.addEventListener("input", function(){
+    renderList(this.value);
+  });
+
+  // 🔥 CLICK → ALLE AUTOS
+  input.addEventListener("focus", function(){
+    renderList(""); // 🔥 GANZE LISTE
+  });
+
+  // 🔥 CLICK OUTSIDE → CLOSE
+  document.addEventListener("click", (e)=>{
+    if(!input.contains(e.target) && !dropdown.contains(e.target)){
+      dropdown.style.display = "none";
+    }
+  });
+}
+// ---------- Intervalle ----------
+let useRPM = false;
+let showRpmNm = false;
+let singleGear = true;
+let show60 = false;
+let show200 = false;
+let show300 = false;
+
+function updateIntervals(){
+
+  for (let i = 60; i < 400; i += 10){
+
+    const row = document.getElementById("row"+i);
+
+    // 🔥 BASIS IMMER
+    if(i >= 100 && i < 200){
+      row.style.display = "block";
+      continue;
+    }
+
+    if(i >= 60 && i < 100){
+      row.style.display = show60 ? "block" : "none";
+    }
+    else if(i >= 200 && i < 300){
+      row.style.display = show200 ? "block" : "none";
+    }
+    else if(i >= 300 && i < 400){
+      row.style.display = (show200 && show300) ? "block" : "none";
+    }
+  }
+}
+
+function toggleAxis(){
+
+  // ❌ WICHTIG: blockieren bei mehreren Gängen
+  if(!singleGear){
+    return;
+  }
+
+  useRPM = !useRPM;
+
+  const btn = document.getElementById("axisBtn");
+  btn.innerText = useRPM ? "X-Achse: U/min" : "X-Achse: km/h";
+
+  if(window.lastResults){
+    drawGraph(window.lastResults);
+  }
+}
+const container = document.getElementById("intervals");
+
+let awd = true;
+let dsg = true;
+
+function toggleAWD(){
+  awd = !awd;
+  const btn = document.getElementById("awdBtn");
+  btn.innerText = awd ? "AWD ON" : "AWD OFF";
+  btn.style.background = awd ? "#2ecc71" : "#c0392b";
+}
+
+function toggleDSG(){
+  dsg = !dsg;
+  const btn = document.getElementById("dsgBtn");
+  btn.innerText = dsg ? "DSG ON" : "DSG OFF";
+  btn.style.background = dsg ? "#2ecc71" : "#c0392b";
+}
+function toggleRpmNm(){
+  showRpmNm = !showRpmNm;
+
+  const btn = document.getElementById("rpmBtn");
+  const box = document.getElementById("gearRefBox");
+
+  if(showRpmNm){
+    btn.style.background = "#2ecc71"; // ✅ grün = aktiv
+    box.style.display = "block";
+  } else {
+    btn.style.background = "#333";   // ❌ grau = aus
+    box.style.display = "none";
+  }
+}
+function toggle60(){
+  show60 = !show60;
+
+  const btn = document.getElementById("btn60");
+  btn.classList.toggle("active", show60);
+
+  updateIntervals();
+}
+
+function toggle200(){
+  show200 = !show200;
+
+  const btn = document.getElementById("btn200");
+  btn.classList.toggle("active", show200);
+
+  // 🔥 wenn 200 aus → 300 auch aus!
+  if(!show200){
+    show300 = false;
+    document.getElementById("btn300").classList.remove("active");
+  }
+
+  updateIntervals();
+}
+
+function toggle300(){
+
+  if(!show200) return;
+
+  show300 = !show300;
+
+  const btn = document.getElementById("btn300");
+  btn.classList.toggle("active", show300);
+
+  updateIntervals();
+}
+for (let i = 60; i < 400; i += 10) {
+
+  const div = document.createElement("div");
+  div.id = "row" + i;
+
+  // 🔥 STANDARD: nur 100–200 sichtbar
+  if(i < 100 || i >= 200){
+    div.style.display = "none";
+  }
+
+  let defaultGear = 4;
+
+if(i < 100) defaultGear = 4;
+if(i >= 200 && i < 300) defaultGear = 5;
+if(i >= 300) defaultGear = 6;
+
+div.innerHTML = `
+  <div style="display:flex; gap:5px">
+    <input id="t${i}" placeholder="${i}-${i+10} Zeit">
+    <select id="g${i}">
+      <option ${defaultGear==3?'selected':''}>3</option>
+      <option ${defaultGear==4?'selected':''}>4</option>
+      <option ${defaultGear==5?'selected':''}>5</option>
+      <option ${defaultGear==6?'selected':''}>6</option>
+      <option ${defaultGear==7?'selected':''}>7</option>
+    </select>
+  </div>
+`;
+
+  container.appendChild(div);
+}
+
+// ---------- Input Fix ----------
+function getVal(id){
+  return parseFloat(
+    document.getElementById(id).value.replace(",", ".")
+  ) || 0;
+}
+
+// ---------- RPM ----------
+function calcRPM(speed, gear){
+  const base = getVal("g"+gear+"ref");
+  if (!base) return null;
+  return (speed / base) * 3000;
+}
+
+// ---------- MASS FACTOR ----------
+function massFactorForGear(gear, vehicleMass) {
+  const base = {3:1.11,4:1.08,5:1.064,6:1.055,7:1.05}[gear];
+  return (base - 1) * (1500 / vehicleMass) + 1;
+}
+
+// ---------- MAIN POWER ----------
+function calculateMotorPowerPS(
+  vehicleMass,
+  driverMass,
+  massFactor,
+  time,
+  midSpeedKmh,
+  cw,
+  area,
+  pressure,
+  temp,
+  drivetrainForce,
+  slopePercent
+) {
+  const g = 9.81;
+  const v = midSpeedKmh / 3.6;
+  const a = (10 / 3.6) / time;
+
+  const airDensity =
+    (pressure * 100) / (287.05 * (temp + 273.15));
+
+  const F =
+    (vehicleMass * massFactor + driverMass) * a +
+    (vehicleMass + driverMass) * g * (slopePercent / 100) +
+    (airDensity / 2) * cw * area * v * v +
+    drivetrainForce;
+
+  return (F * v / 1000) * 1.36;
+}
+
+// ---------- DRIVETRAIN ----------
+function calculateDrivetrainFinal(vehicleMass, driverMass, ps1, dsg, awd) {
+  let F1 = 975;
+
+  if (!dsg) F1 -= 50;
+  if (!awd) F1 -= 75;
+
+  F1 -= 0.017 * 1600 * 9.81;
+
+  let exponent =
+    ps1 <= 1000 ? 0.7 :
+    ps1 >= 1600 ? 0.8 :
+    0.7 + (ps1 - 1000) * (0.1 / 600);
+
+  const F2 = F1 * Math.pow(ps1 / 400, exponent);
+  const F3 = F2 + 0.017 * (vehicleMass + driverMass) * 9.81;
+
+  let k =
+    ps1 <= 1000 ? 75 :
+    ps1 >= 1600 ? 100 :
+    75 + (ps1 - 1000) * (25 / 600);
+
+  return F3 + (ps1 - 400) / 400 * k;
+}
+
+// ---------- GRAPH ----------
+function drawGraph(results){
+
+  const canvas = document.getElementById("graph");
+  const ctx = canvas.getContext("2d");
+
+  
+// RESET
+ctx.setTransform(1,0,0,1,0,0);
+
+// WICHTIG: Canvas = exakt sichtbare Größe
+const dpr = window.devicePixelRatio || 1;
+const rect = canvas.getBoundingClientRect();
+
+const width = rect.width;
+const height = 320;
+
+canvas.width = width * dpr;
+canvas.height = height * dpr;
+canvas.style.height = height + "px";
+
+ctx.setTransform(dpr,0,0,dpr,0,0);
+
+// CLEAR
+ctx.clearRect(0,0,canvas.width,canvas.height);
+
+  // ===== DATEN =====
+  const points = results.map((r,i)=>{
+    const parts = r.label.split("-");
+    if(parts.length !== 2) return null;
+
+    return {
+      index: i,
+      speed: (parseFloat(parts[0]) + parseFloat(parts[1])) / 2,
+      rpm: r.rpm !== "-" ? r.rpm : null,
+      ps: r.ps,
+      nm: r.nm !== "-" ? r.nm : null
+    };
+  }).filter(p=>p);
+
+  if(points.length < 2) return;
+
+  const hasNm = singleGear && points.some(p => p.nm !== null);
+
+  const pts = useRPM
+    ? points.filter(p => p.rpm !== null)
+    : points;
+
+const scale = 1;
+
+const fontMain = 13;
+const fontSmall = 11;
+const fontBold = "bold 11px Arial";
+
+// 🔥 MEHR PLATZ FÜR PS / NM
+const padLeft = 60;
+const padRight = hasNm ? 60 : 20;
+const padTop = 20;
+const padBottom = 55;
+
+  if(pts.length < 2) return;
+
+  // ===== X SKALA =====
+  let minX, maxX;
+
+  if(useRPM){
+    const rpms = pts.map(p=>p.rpm);
+
+    minX = Math.floor(Math.min(...rpms) / 500) * 500;
+    maxX = Math.ceil(Math.max(...rpms) / 500) * 500;
+
+  } else {
+    minX = Math.min(...pts.map(p=>p.speed));
+    maxX = Math.max(...pts.map(p=>p.speed));
+  }
+
+  // ===== Y SKALA (APP STYLE) =====
+  const psVals = pts.map(p=>p.ps);
+  const nmVals = hasNm ? pts.map(p=>p.nm || 0) : [];
+
+  const minYRaw = Math.min(
+    Math.min(...psVals),
+    hasNm ? Math.min(...nmVals) : Infinity
+  );
+
+  const maxYRaw = Math.max(
+    Math.max(...psVals),
+    hasNm ? Math.max(...nmVals) : 0
+  );
+
+  const stepY = maxYRaw <= 300 ? 25 : 50;
+
+  const yMin = Math.floor(minYRaw / stepY) * stepY;
+  const yMax = Math.ceil(maxYRaw / stepY) * stepY;
+
+  // ===== LAYOUT =====
+const left = padLeft;
+const right = padRight;
+const top = padTop;
+const bottom = padBottom;
+
+  const w = width - left - right;
+  const h = height - top - bottom;
+
+  const x = (p)=>{
+    const v = useRPM ? p.rpm : p.speed;
+    return left + ((v - minX) / (maxX - minX)) * w;
+  };
+
+  const y = (val)=>{
+    return top + h - ((val - yMin)/(yMax - yMin)) * h;
+  };
+
+  const clamp = (v,min,max)=>Math.max(min,Math.min(v,max));
+
+  // ===== GRID =====
+  ctx.strokeStyle = "#222";
+  ctx.lineWidth = 1;
+
+  for(let v=yMin; v<=yMax; v+=stepY){
+    const yp = y(v);
+
+    ctx.beginPath();
+    ctx.moveTo(left,yp);
+    ctx.lineTo(left+w,yp);
+    ctx.stroke();
+
+    // PS links
+    ctx.fillStyle = "red";
+    ctx.font = fontSmall + "px Arial";
+    ctx.textAlign = "right";
+    ctx.fillText(v, left-6, yp+4);
+
+    // Nm rechts
+    if(hasNm){
+      ctx.fillStyle = "#00eaff";
+      ctx.textAlign = "left";
+      ctx.fillText(v, left+w+6, yp+4);
+    }
+  }
+
+  // ===== AXES =====
+  ctx.strokeStyle = "#888";
+
+  // Y links
+  ctx.beginPath();
+  ctx.moveTo(left,top);
+  ctx.lineTo(left,top+h);
+  ctx.stroke();
+
+  // X unten
+  ctx.beginPath();
+  ctx.moveTo(left,top+h);
+  ctx.lineTo(left+w,top+h);
+  ctx.stroke();
+// ===== X TICKS (FIXED) =====
+ctx.strokeStyle = "#888";
+
+if(useRPM){
+
+  for(let v = minX; v <= maxX; v += 500){
+    const px = left + ((v - minX)/(maxX - minX)) * w;
+
+    ctx.beginPath();
+    ctx.moveTo(px, top + h);
+    ctx.lineTo(px, top + h + 5);
+    ctx.stroke();
+  }
+
+} else {
+
+  pts.forEach(p=>{
+    const px = x(p);
+
+    ctx.beginPath();
+    ctx.moveTo(px, top + h);
+    ctx.lineTo(px, top + h + 5);
+    ctx.stroke();
+  });
+
+}
+
+  // Y rechts (Nm)
+  if(hasNm){
+    ctx.beginPath();
+    ctx.moveTo(left+w,top);
+    ctx.lineTo(left+w,top+h);
+    ctx.stroke();
+  }
+ctx.strokeStyle = "#444";
+ctx.lineWidth = 1;
+
+ctx.strokeRect(left, top, w, h);
+  // ===== PS LINE =====
+  ctx.beginPath();
+  ctx.strokeStyle = "#ff2a2a";
+  ctx.lineWidth = 3;
+
+  pts.forEach((p,i)=>{
+    const px = x(p);
+    const py = y(p.ps);
+
+    if(i===0) ctx.moveTo(px,py);
+    else ctx.lineTo(px,py);
+  });
+
+  ctx.stroke();
+
+  // ===== NM LINE =====
+  if(hasNm){
+    ctx.beginPath();
+    ctx.strokeStyle = "#00eaff";
+    ctx.lineWidth = 2;
+
+    let first = true;
+
+    pts.forEach(p=>{
+      if(p.nm === null) return;
+
+      const px = x(p);
+      const py = y(p.nm);
+
+      if(first){
+        ctx.moveTo(px,py);
+        first=false;
+      } else {
+        ctx.lineTo(px,py);
+      }
+    });
+
+    ctx.stroke();
+  }
+
+  // ===== PEAK PS =====
+  const peakPs = pts.reduce((a,b)=>a.ps>b.ps?a:b);
+
+  let px = x(peakPs);
+  let py = y(peakPs.ps);
+
+  ctx.fillStyle = "yellow";
+  ctx.beginPath();
+  ctx.arc(px,py,6,0,6.28);
+  ctx.fill();
+
+  ctx.fillStyle = "red";
+  ctx.font = fontBold;
+  ctx.textAlign = "left";
+
+  ctx.fillText(
+  `Peak ${peakPs.ps} PS`,
+  clamp(px+8,left+5,left+w-100),
+  clamp(py-12, top+15, top+h-10)
+  );
+
+  // ===== PEAK NM =====
+  if(hasNm){
+    const peakNm = pts
+      .filter(p=>p.nm!==null)
+      .reduce((a,b)=>a.nm>b.nm?a:b);
+
+    const nx = x(peakNm);
+    const ny = y(peakNm.nm);
+
+    ctx.fillStyle = "#00eaff";
+    ctx.beginPath();
+    ctx.arc(nx,ny,5,0,6.28);
+    ctx.fill();
+
+    ctx.fillStyle = "#00eaff";
+    ctx.fillText(
+      `Peak ${peakNm.nm} Nm`,
+  clamp(nx-90,left+5,left+w-5),
+  clamp(ny-12, top+15, top+h-10)
+    );
+  }
+
+ // ===== X LABELS =====
+ctx.fillStyle = "#fff";
+ctx.textAlign = "center";
+ctx.font = fontSmall + "px Arial";
+
+if(useRPM){
+
+  for(let v=minX; v<=maxX; v+=500){
+    const px = left + ((v - minX)/(maxX - minX)) * w;
+
+    ctx.fillText(v, px, top + h + 25); // 🔥 höher
+  }
+
+} else {
+
+  // 🔥 JEDER PUNKT bekommt Label (FIX!)
+  pts.forEach(p=>{
+    const px = x(p);
+    ctx.fillText(Math.round(p.speed), px, top + h + 25);
+  });
+
+}
+
+  // ===== X TITLE =====
+ctx.fillStyle = "#aaa";
+ctx.font = fontSmall + "px Arial";
+
+ctx.fillText(
+  useRPM ? "U/min" : "km/h",
+  width / 2,
+  top + h + 45
+);
+
+  // ===== Y LABELS =====
+  ctx.save();
+  ctx.rotate(-Math.PI/2);
+
+  ctx.fillStyle = "red";
+  ctx.textAlign = "center";
+  ctx.fillText("PS", -h/2, 15);
+
+  if(hasNm){
+    ctx.fillStyle = "#00eaff";
+    ctx.fillText("Nm", -h/2, canvas.width-15);
+  }
+
+  ctx.restore();
+}
+function resetAll(){
+
+  // 🔹 Inputs löschen
+  document.querySelectorAll("input").forEach(i => i.value = "");
+
+  // 🔹 Intervalle + Gang reset
+  for (let i = 60; i < 400; i += 10){
+
+  // Zeit reset
+  document.getElementById("t"+i).value = "";
+
+  // 🔥 richtiger Default-Gang je Bereich
+  let defaultGear = 4;
+
+  if(i < 100) defaultGear = 4;
+  if(i >= 200 && i < 300) defaultGear = 5;
+  if(i >= 300) defaultGear = 6;
+
+  document.getElementById("g"+i).value = String(defaultGear);
+}
+
+  // 🔹 STATES RESET
+  awd = true;
+  dsg = true;
+  useRPM = false;
+  showRpmNm = false;
+  singleGear = true;
+
+  document.getElementById("carSearch").value = "";
+  document.getElementById("carDropdown").style.display = "none";
+
+  // 🔹 AWD Button
+  const awdBtn = document.getElementById("awdBtn");
+  awdBtn.innerText = "AWD ON";
+  awdBtn.style.background = "#2ecc71";
+
+  // 🔹 DSG Button
+  const dsgBtn = document.getElementById("dsgBtn");
+  dsgBtn.innerText = "DSG ON";
+  dsgBtn.style.background = "#2ecc71";
+
+  // 🔹 RPM/Nm Button RESET
+  const rpmBtn = document.getElementById("rpmBtn");
+  rpmBtn.style.background = "#333";
+  showRpmNm = false;
+
+  // 🔹 Axis Button
+  const axisBtn = document.getElementById("axisBtn");
+  axisBtn.innerText = "X-Achse: km/h";
+  axisBtn.style.opacity = 1;
+
+  // 🔹 GearRef AUSBLENDEN
+document.getElementById("gearRefBox").style.display = "none";
+
+  // 🔹 Graph löschen
+  const canvas = document.getElementById("graph");
+  const ctx = canvas.getContext("2d");
+  ctx.setTransform(1,0,0,1,0,0);
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+
+  // 🔹 Ergebnis löschen
+  document.getElementById("result").innerHTML = "";
+
+  show60 = false;
+  show200 = false;
+  show300 = false;
+  updateIntervals();
+  document.getElementById("btn60").classList.remove("active");
+  document.getElementById("btn200").classList.remove("active");
+  document.getElementById("btn300").classList.remove("active");
+
+  // 🔹 Cache löschen
+  window.lastResults = null;
+}
+// ---------- MAIN ----------
+function calc(){
+
+  const name = document.getElementById("name").value;
+
+  const mass = getVal("mass");
+  const driver = getVal("driver");
+  const cw = getVal("cw");
+  const area = getVal("area");
+  const pressure = getVal("pressure");
+  const temp = getVal("temp");
+  const slope = getVal("slope");
+
+// ===== VALIDATION (NUR LEER CHECK) =====
+
+function isEmpty(id){
+  return document.getElementById(id).value.trim() === "";
+}
+
+// Pflichtfelder prüfen
+if (
+  isEmpty("mass") ||
+  isEmpty("driver") ||
+  isEmpty("cw") ||
+  isEmpty("area") ||
+  isEmpty("pressure") ||
+  isEmpty("temp") ||
+  isEmpty("slope")
+){
+  alert("Bitte alle Fahrzeug und Wetterdaten ausfüllen!");
+  return;
+}
+
+// Intervalle prüfen
+let hasInterval = false;
+
+for (let i = 60; i < 400; i += 10){
+  if (!isEmpty("t"+i)){
+    hasInterval = true;
+  }
+}
+
+if(!hasInterval){
+  alert("Mindestens ein Intervall eingeben!");
+  return;
+}
+  let results = [];
+  // ===== CHECK GEAR CONSISTENCY =====
+const usedGears = [];
+
+for (let i = 60; i < 400; i += 10){
+  const time = getVal("t"+i);
+  if(time > 0){
+    const gear = document.getElementById("g"+i).value;
+    usedGears.push(gear);
+  }
+}
+
+const uniqueGears = [...new Set(usedGears)];
+singleGear = uniqueGears.length === 1;
+
+  // =========================
+// GLOBAL BERECHNUNG (FIX)
+// =========================
+
+// 1️⃣ Alle PS sammeln
+let psList = [];
+
+for (let i = 60; i < 400; i += 10){
+  const time = getVal("t"+i);
+  if (!time) continue;
+
+  const gear = parseInt(document.getElementById("g"+i).value);
+  const mid = i + 5;
+
+  let ps1 = calculateMotorPowerPS(
+    mass,
+    driver,
+    massFactorForGear(gear, mass),
+    time,
+    mid,
+    cw,
+    area,
+    pressure,
+    temp,
+    100,
+    slope
+  );
+
+  psList.push(ps1);
+}
+
+if(psList.length === 0) return;
+
+// 2️⃣ Max PS nehmen
+let psCurrent = Math.max(...psList);
+let drivetrainFinal = 0;
+
+// 3️⃣ Iteration GLOBAL
+for (let x = 0; x < 5; x++) {
+
+  drivetrainFinal = calculateDrivetrainFinal(
+    mass,
+    driver,
+    psCurrent,
+    dsg,
+    awd
+  );
+
+  let newList = [];
+
+  for (let i = 60; i < 400; i += 10){
+    const time = getVal("t"+i);
+    if (!time) continue;
+
+    const gear = parseInt(document.getElementById("g"+i).value);
+    const mid = i + 5;
+
+    let ps = calculateMotorPowerPS(
+      mass,
+      driver,
+      massFactorForGear(gear, mass),
+      time,
+      mid,
+      cw,
+      area,
+      pressure,
+      temp,
+      drivetrainFinal,
+      slope
+    );
+
+    newList.push(ps);
+  }
+
+  const newMax = Math.max(...newList);
+
+  if (Math.abs(newMax - psCurrent) < 1) break;
+
+  psCurrent = newMax;
+}
+
+// =========================
+// FINAL RESULTS
+// =========================
+for (let i = 60; i < 400; i += 10){
+
+  const time = getVal("t"+i);
+  if (!time) continue;
+
+  const gear = parseInt(document.getElementById("g"+i).value);
+  const mid = i + 5;
+
+  const ps = calculateMotorPowerPS(
+    mass,
+    driver,
+    massFactorForGear(gear, mass),
+    time,
+    mid,
+    cw,
+    area,
+    pressure,
+    temp,
+    drivetrainFinal,
+    slope
+  );
+
+  let rpm = null;
+  let nm = null;
+
+  const raw = document.getElementById("g"+gear+"ref").value;
+  const kmh3000 = parseFloat(raw.replace(",", "."));
+
+  if (showRpmNm && !isNaN(kmh3000) && kmh3000 > 0) {
+    rpm = (mid / kmh3000) * 3000;
+    nm = (ps * 7023) / rpm;
+  }
+
+  results.push({
+    label: `${i}-${i+10}`,
+    time: time.toFixed(2),
+    ps: Math.round(ps),
+    rpm: rpm !== null ? Math.round(rpm) : "-",
+    nm: nm !== null ? Math.round(nm) : "-"
+  });
+}
+
+  if(results.length === 0) return;
+
+  const max = Math.max(...results.map(r=>r.ps));
+// ❌ Mehrere Gänge → RPM AUS
+if(!singleGear){
+  useRPM = false;
+
+  const btn = document.getElementById("axisBtn");
+  btn.innerText = "X-Achse: km/h";
+  btn.style.opacity = 0.5;
+} else {
+  document.getElementById("axisBtn").style.opacity = 1;
+}
+  
+  window.lastResults = results;
+
+  let html = `
+    <div class="subtitle" style="margin-top:30px;">MAXIMALE MOTORLEISTUNG</div>
+  <div class="big">${max} PS</div>
+  <h3>${name}</h3>
+
+  <div class="grid">
+    <div class="card">🚗 ${mass}kg</div>
+    <div class="card">🧍 ${driver}kg</div>
+    <div class="card">${awd ? "AWD ON" : "AWD OFF"}</div>
+
+    <div class="card">cw ${cw}</div>
+    <div class="card">A ${area} m²</div>
+    <div class="card">${dsg ? "DSG ON" : "DSG OFF"}</div>
+
+    <div class="card">🌬 ${pressure} mbar</div>
+    <div class="card">🌡 ${temp} °C</div>
+    <div class="card">📈 Slope ${slope}%</div>
+  </div>
+
+    <table class="${showRpmNm ? 'full' : 'compact'}">
+  <tr>
+    <th>Intervall</th>
+    <th>Zeit</th>
+    <th>PS</th>
+    ${showRpmNm ? "<th>Nm</th><th>RPM</th>" : ""}
+  </tr>
+  `;
+
+ results.forEach(r=>{
+
+  const isBest = r.ps === max;
+
+  html += `
+    <tr class="${isBest ? "highlight-row" : ""}">
+      <td>${r.label}</td>
+      <td>${r.time}s</td>
+      <td class="${isBest ? "highlight" : ""}">${r.ps}</td>
+      ${showRpmNm ? `<td>${r.nm}</td><td>${r.rpm}</td>` : ""}
+    </tr>
+  `;
+});
+
+  html += "</table>";
+
+  document.getElementById("result").innerHTML = html;
+  showResultPage();
+  // 🔥 FIX: Graph erst zeichnen wenn sichtbar
+setTimeout(() => {
+  drawGraph(results);
+}, 50);
+}
+window.onload = function(){
+
+  const awdBtn = document.getElementById("awdBtn");
+  const dsgBtn = document.getElementById("dsgBtn");
+  const rpmBtn = document.getElementById("rpmBtn");
+  const box = document.getElementById("gearRefBox");
+
+  awdBtn.style.background = "#2ecc71";
+  dsgBtn.style.background = "#2ecc71";
+  rpmBtn.style.background = "#333";  // ❌ AUS
+box.style.display = "none";        // ❌ AUS
+
+
+  // 🔥 NEU
+  initNumericInputs();
+  initCarSearch();
+
+  // 🔥 Dropdown zurücksetzen wenn User manuell ändert
+["cw","area"].forEach(id=>{
+  document.getElementById(id).addEventListener("input", ()=>{
+    document.getElementById("carSearch").value = "";
+  });
+});
+updateIntervals();
+};
+// 🔥 NUMERIC INPUT SYSTEM (APP STYLE)
+function initNumericInputs(){
+
+  const normalFields = [
+    "mass","driver","cw","area","pressure"
+  ];
+
+  const negativeFields = [
+    "temp","slope"
+  ];
+
+  // normale Zahlen
+  normalFields.forEach(id=>{
+    const el = document.getElementById(id);
+    el.addEventListener("input", ()=>formatNumericInput(el,false));
+  });
+
+  // negative erlaubt
+  negativeFields.forEach(id=>{
+    const el = document.getElementById(id);
+    el.addEventListener("input", ()=>formatNumericInput(el,true));
+  });
+
+  // Gang Referenzen
+  for(let g=3; g<=7; g++){
+    const el = document.getElementById("g"+g+"ref");
+    el.addEventListener("input", ()=>formatNumericInput(el,false));
+  }
+
+  // Intervalle Zeiten
+  for (let i = 60; i < 400; i += 10){
+    const el = document.getElementById("t"+i);
+    el.addEventListener("input", ()=>formatNumericInput(el,false));
+  }
+}
+function saveResult(){
+
+  const element = document.getElementById("exportArea");
+
+  html2canvas(element, {
+    backgroundColor: "#000"
+  }).then(canvas => {
+
+    const link = document.createElement("a");
+    link.download = "leistung.png";
+    link.href = canvas.toDataURL("image/png");
+    link.click();
+
+  });
+}
+function showResultPage(){
+  document.getElementById("inputPage").style.display = "none";
+  document.getElementById("resultPage").style.display = "block";
+}
+
+function backToInput(){
+  document.getElementById("resultPage").style.display = "none";
+  document.getElementById("inputPage").style.display = "block";
+}
+</script>
+
+</body>
+</html>
