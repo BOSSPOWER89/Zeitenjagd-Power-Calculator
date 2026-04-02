@@ -1235,6 +1235,8 @@ async function calc(){
       mid: i + 5
     });
   }
+const gearsUsed = [...new Set(data.intervals.map(i => i.gear))];
+singleGear = gearsUsed.length === 1;
 
   // Gear refs
   for(let g=3; g<=7; g++){
@@ -1265,10 +1267,24 @@ async function calc(){
   window.lastResults = results;
 
   let html = `
-    <div class="subtitle" style="margin-top:30px;">MAXIMALE MOTORLEISTUNG</div>
-    <div class="big">${max} PS</div>
-    <h3>${name}</h3>
-  `;
+  <div class="subtitle" style="margin-top:30px;">MAXIMALE MOTORLEISTUNG</div>
+  <div class="big">${max} PS</div>
+  <h3>${name}</h3>
+
+  <div class="grid">
+    <div class="card">🚗 ${data.mass}kg</div>
+    <div class="card">🧍 ${data.driver}kg</div>
+    <div class="card">${data.awd ? "AWD ON" : "AWD OFF"}</div>
+
+    <div class="card">cw ${data.cw}</div>
+    <div class="card">A ${data.area} m²</div>
+    <div class="card">${data.dsg ? "DSG ON" : "DSG OFF"}</div>
+
+    <div class="card">🌬 ${data.pressure} mbar</div>
+    <div class="card">🌡 ${data.temp} °C</div>
+    <div class="card">📈 Slope ${data.slope}%</div>
+  </div>
+`;
 
   html += `<table class="${showRpmNm ? 'full' : 'compact'}">
   <tr>
