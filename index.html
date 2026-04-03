@@ -72,7 +72,7 @@ button {
   width: 100%;
   padding: 14px;
   margin-top: 15px;
-  margin-bottom:40px; /* 🔥 NEU */
+  margin-bottom:10px; /* 🔥 NEU */
   background: linear-gradient(90deg,#6c4cff,#9b59ff);
   border: none;
   color: white;
@@ -107,8 +107,8 @@ button {
 canvas {
   width: 100%;
   height: 320px;
-  margin-top: 40px;
-  margin-bottom: 40px;
+  margin-top: 30px;
+  margin-bottom: 15px;
   background: #111;
   border-radius: 12px;
 }
@@ -790,7 +790,15 @@ const dpr = window.devicePixelRatio || 1;
 const rect = canvas.getBoundingClientRect();
 
 const width = rect.width;
-const height = isMobile ? 260 : 320; // 🔥 FIX Höhe mobile
+let height;
+
+if (window.innerWidth >= 900) {
+  height = 450; // 🔥 Desktop höher
+} else if (isMobile) {
+  height = 260; // Handy
+} else {
+  height = 320; // Tablet
+}
 
 canvas.width = width * dpr;
 canvas.height = height * dpr;
@@ -1306,11 +1314,11 @@ singleGear = gearsUsed.length === 1;
     <div class="card">${data.awd ? "AWD ON" : "AWD OFF"}</div>
 
     <div class="card">cw ${data.cw}</div>
-    <div class="card">A ${data.area} m²</div>
+    <div class="card">A ${data.area}m²</div>
     <div class="card">${data.dsg ? "DSG ON" : "DSG OFF"}</div>
 
-    <div class="card">🌬 ${data.pressure} mbar</div>
-    <div class="card">🌡 ${data.temp} °C</div>
+    <div class="card">🌬 ${data.pressure}mbar</div>
+    <div class="card">🌡 ${data.temp}°C</div>
     <div class="card">📈 Slope ${data.slope}%</div>
   </div>
 `;
