@@ -8,8 +8,8 @@ app.use(express.json());
 
 const fetch = require("node-fetch");
 
-const CLIENT_ID = "Acw-ECxOopLqk9yWFd2nl-V8pK3f8jAouUrOzZXu4vUCIQBJS145u0SuL4RrBqYwQsRZ_yDW49VFd-mi";
-const SECRET = "EDOzs4P2MasK-ik0paQ47P3kRtGUtzxrUF9_w1ffG_7ckis5KTewtPE8GSnzvPb9DM1md_wrmRnX1Gq5";
+const CLIENT_ID = "AZos8lLQUzQzwb89Mr61UvtaAQeOJmIEMthfdnLua7wHRPiEweESTKNLlKm2TsycvE3uaD-KLHt66rAn";
+const SECRET = "EIW6b7FXrIZ4YiWWbgArgnWzfRkCUoeMW7iXuGbd_cFBCxP7Cyv4ubYJICPorFhUr3YYad9PMNDGuXem";
 
 
 // =========================
