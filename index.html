@@ -831,8 +831,8 @@ const fontBold = isMobile ? "bold 9px Arial" : "bold 11px Arial";
 
 // 🔥 MEHR PLATZ FÜR PS / NM
 const padLeft = isMobile 
-  ? (isPortrait ? 35 : 40)
-  : 60;
+  ? (isPortrait ? 28 : 35)
+  : 55;
 const padRight = hasNm 
   ? (isMobile ? 70 : 60)   // 🔥 mehr Platz rechts
   : (isMobile ? 20 : 20);
@@ -916,7 +916,7 @@ const bottom = padBottom;
     if(hasNm){
       ctx.fillStyle = "#00eaff";
       ctx.textAlign = "left";
-      ctx.fillText(v, left + w + (isMobile ? 8 : 10), yp + 4);
+      ctx.fillText(v, left + w + (isMobile ? 12 : 14), yp + 4);
     }
   }
 
@@ -1062,12 +1062,19 @@ ctx.font = fontSmall + "px Arial";
 
 if(useRPM){
 
-  for(let v=minX; v<=maxX; v+=500){
-    const px = left + ((v - minX)/(maxX - minX)) * w;
+  let stepRPM = 500;
 
-    ctx.fillText(v, px, top + h + 25); // 🔥 höher
+  if(isMobile && isPortrait){
+    stepRPM = 1000;   // 🔥 weniger Labels
+  } else if(isMobile){
+    stepRPM = 700;
   }
 
+  for(let v=minX; v<=maxX; v+=stepRPM){
+    const px = left + ((v - minX)/(maxX - minX)) * w;
+
+    ctx.fillText(v, px, top + h + (isMobile ? 18 : 25));
+  }
 } else {
 
 let step = 1;
@@ -1112,7 +1119,7 @@ ctx.fillText(
 
   if(hasNm){
     ctx.fillStyle = "#00eaff";
-    ctx.fillText("Nm", -h/2, canvas.width-15);
+    ctx.fillText("Nm", -h/2, width - (isMobile ? 5 : 10));
   }
 
   ctx.restore();
