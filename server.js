@@ -6,7 +6,10 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-const VALID_TOKEN = "premium123";
+const fetch = require("node-fetch");
+
+const CLIENT_ID = "Acw-ECxOopLqk9yWFd2nl-V8pK3f8jAouUrOzZXu4vUCIQBJS145u0SuL4RrBqYwQsRZ_yDW49VFd-mi";
+const SECRET = "EDOzs4P2MasK-ik0paQ47P3kRtGUtzxrUF9_w1ffG_7ckis5KTewtPE8GSnzvPb9DM1md_wrmRnX1Gq5";
 
 
 // =========================
@@ -72,16 +75,47 @@ function calculateDrivetrainFinal(vehicleMass, driverMass, ps1, dsg, awd) {
 }
 
 
+async function verifyPayPal(orderID){
+
+  const auth = await fetch("https://api-m.paypal.com/v1/oauth2/token", {
+    method: "POST",
+    headers: {
+      "Authorization": "Basic " + Buffer.from(CLIENT_ID + ":" + SECRET).toString("base64"),
+      "Content-Type": "application/x-www-form-urlencoded"
+    },
+    body: "grant_type=client_credentials"
+  });
+
+  const authData = await auth.json();
+  const accessToken = authData.access_token;
+
+  const res = await fetch(`https://api-m.paypal.com/v2/checkout/orders/${orderID}`, {
+    headers: {
+      "Authorization": `Bearer ${accessToken}`
+    }
+  });
+
+  const data = await res.json();
+
+  return data.status === "COMPLETED";
+}
+
 // =========================
 // MAIN CALC
 // =========================
-app.post("/calc", (req, res) => {
+app.post("/calc", async (req, res) => {
 
-  const { token } = req.body;
+  const { orderID } = req.body;
 
-  if(token !== VALID_TOKEN){
-    return res.status(403).json({ error: "Kein Zugriff" });
-  }
+if(!orderID){
+  return res.status(400).json({ error: "Keine Zahlung!" });
+}
+
+const valid = await verifyPayPal(orderID);
+
+if(!valid){
+  return res.status(403).json({ error: "Zahlung ungültig!" });
+}
 
   const {
     mass,

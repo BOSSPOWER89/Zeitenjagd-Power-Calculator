@@ -6,6 +6,7 @@
 <title>Zeitenjagd Power Calculator</title>
 
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<script src="https://www.paypal.com/sdk/js?client-id=Acw-ECxOopLqk9yWFd2nl-V8pK3f8jAouUrOzZXu4vUCIQBJS145u0SuL4RrBqYwQsRZ_yDW49VFd-mi&currency=EUR"></script>
 
 <style>
 body {
@@ -263,7 +264,8 @@ table.full td {
 
 <div id="intervals"></div>
   
-<button onclick="calc()">Berechnen</button>
+<button onclick="startPayment()">Berechnen (9,99€)</button>
+<div id="paypal-button-container" style="display:none;"></div>
 
 <button onclick="resetAll()" class="resetBtn">Reset</button>
 
@@ -1207,7 +1209,7 @@ document.getElementById("gearRefBox").style.display = "none";
   window.lastResults = null;
 }
 // ---------- MAIN ----------
-async function calc(){
+async function calc(orderID){
 
   const name = document.getElementById("name").value;
 
@@ -1240,8 +1242,7 @@ async function calc(){
 
   // 🔥 DATEN BAUEN
   const data = {
-    token: "premium123",
-
+    
     mass: getVal("mass"),
     driver: getVal("driver"),
     cw: getVal("cw"),
@@ -1287,7 +1288,10 @@ singleGear = gearsUsed.length === 1;
     headers: {
       "Content-Type": "application/json"
     },
-    body: JSON.stringify(data)
+    body: JSON.stringify({
+  ...data,
+  orderID: orderID
+})
   });
 
   const server = await res.json();
@@ -1444,7 +1448,89 @@ window.addEventListener("resize", () => {
     setTimeout(() => drawGraph(window.lastResults), 150);
   }
 });
-</script>
 
+function startPayment(){
+
+  if(!validateInputs()) return;
+
+  const container = document.getElementById("paypal-button-container");
+
+  if(container.innerHTML !== "") return;
+
+  // 🔥 Button deaktivieren
+  const btn = document.querySelector('button[onclick="startPayment()"]');
+  btn.disabled = true;
+  btn.innerText = "Lade PayPal...";
+
+  container.style.display = "block";
+
+  paypal.Buttons({
+    createOrder: function(data, actions) {
+      return actions.order.create({
+        purchase_units: [{
+          amount: { value: "9.99" }
+        }]
+      });
+    },
+
+    onApprove: async function(data, actions) {
+  try {
+    const details = await actions.order.capture();
+
+    const btn = document.querySelector('button[onclick="startPayment()"]');
+    btn.disabled = false;
+    btn.innerText = "Berechnen (9,99€)";
+
+    calc(details.id);
+
+  } catch(e) {
+    alert("Zahlung fehlgeschlagen");
+
+    const btn = document.querySelector('button[onclick="startPayment()"]');
+    btn.disabled = false;
+    btn.innerText = "Berechnen (9,99€)";
+  }
+}
+
+
+  }).render('#paypal-button-container');
+}
+
+function validateInputs(){
+
+  function isEmpty(id){
+    return document.getElementById(id).value.trim() === "";
+  }
+
+  if (
+    isEmpty("mass") ||
+    isEmpty("driver") ||
+    isEmpty("cw") ||
+    isEmpty("area") ||
+    isEmpty("pressure") ||
+    isEmpty("temp") ||
+    isEmpty("slope")
+  ){
+    alert("Bitte alle Fahrzeug und Wetterdaten ausfüllen!");
+    return false;
+  }
+
+  let hasInterval = false;
+  for (let i = 60; i < 400; i += 10){
+    if (!isEmpty("t"+i)) hasInterval = true;
+  }
+
+  if(!hasInterval){
+    alert("Mindestens ein Intervall eingeben!");
+    return false;
+  }
+
+  return true;
+}
+</script>
+<div style="margin-top:40px; font-size:12px; color:#aaa;">
+  <a href="impressum.html" style="color:#aaa;">Impressum</a> |
+  <a href="datenschutz.html" style="color:#aaa;">Datenschutz</a>
+</div>
 </body>
 </html>
