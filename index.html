@@ -774,6 +774,10 @@ function calcRPM(speed, gear){
 // ---------- GRAPH ----------
 function drawGraph(results){
 
+const widthScreen = window.innerWidth;
+const isMobile = widthScreen < 600;
+const isPortrait = window.innerHeight > window.innerWidth;
+
   const canvas = document.getElementById("graph");
   const ctx = canvas.getContext("2d");
 
@@ -786,7 +790,7 @@ const dpr = window.devicePixelRatio || 1;
 const rect = canvas.getBoundingClientRect();
 
 const width = rect.width;
-const height = 320;
+const height = isMobile ? 260 : 320; // 🔥 FIX Höhe mobile
 
 canvas.width = width * dpr;
 canvas.height = height * dpr;
@@ -821,13 +825,15 @@ ctx.clearRect(0,0,canvas.width,canvas.height);
 
 const scale = 1;
 
-const fontMain = 13;
-const fontSmall = 11;
-const fontBold = "bold 11px Arial";
+const fontMain = isMobile ? 10 : 13;
+const fontSmall = isMobile ? 8 : 11;
+const fontBold = isMobile ? "bold 9px Arial" : "bold 11px Arial";
 
 // 🔥 MEHR PLATZ FÜR PS / NM
 const padLeft = 60;
-const padRight = hasNm ? 60 : 20;
+const padRight = hasNm 
+  ? (isMobile ? 45 : 60)
+  : (isMobile ? 15 : 20);
 const padTop = 20;
 const padBottom = 55;
 
@@ -902,13 +908,13 @@ const bottom = padBottom;
     ctx.fillStyle = "red";
     ctx.font = fontSmall + "px Arial";
     ctx.textAlign = "right";
-    ctx.fillText(v, left-6, yp+4);
+    ctx.fillText(v, left - (isMobile ? 4 : 6), yp + 4);
 
     // Nm rechts
     if(hasNm){
       ctx.fillStyle = "#00eaff";
       ctx.textAlign = "left";
-      ctx.fillText(v, left+w+6, yp+4);
+      ctx.fillText(v, left + w + (isMobile ? 4 : 6), yp + 4);
     }
   }
 
@@ -1062,11 +1068,25 @@ if(useRPM){
 
 } else {
 
-  // 🔥 JEDER PUNKT bekommt Label (FIX!)
-  pts.forEach(p=>{
-    const px = x(p);
-    ctx.fillText(Math.round(p.speed), px, top + h + 25);
-  });
+let step = 1;
+
+if(isMobile && isPortrait){
+  step = 3; // 🔥 weniger Labels
+}
+else if(isMobile){
+  step = 2;
+}
+
+pts.forEach((p,i)=>{
+  if(i % step !== 0) return;
+
+  const px = x(p);
+  ctx.fillText(
+    Math.round(p.speed),
+    px,
+    top + h + (isMobile ? 18 : 25)
+  );
+});
 
 }
 
@@ -1077,7 +1097,7 @@ ctx.font = fontSmall + "px Arial";
 ctx.fillText(
   useRPM ? "U/min" : "km/h",
   width / 2,
-  top + h + 45
+  top + h + (isMobile ? 30 : 45)
 );
 
   // ===== Y LABELS =====
@@ -1402,6 +1422,11 @@ function backToInput(){
   document.getElementById("resultPage").style.display = "none";
   document.getElementById("inputPage").style.display = "block";
 }
+window.addEventListener("resize", () => {
+  if(window.lastResults){
+    setTimeout(() => drawGraph(window.lastResults), 150);
+  }
+});
 </script>
 
 </body>
