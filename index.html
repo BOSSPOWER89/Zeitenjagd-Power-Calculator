@@ -831,8 +831,8 @@ const fontBold = isMobile ? "bold 9px Arial" : "bold 11px Arial";
 
 // 🔥 MEHR PLATZ FÜR PS / NM
 const padLeft = isMobile 
-  ? (isPortrait ? 28 : 35)
-  : 55;
+  ? (isPortrait ? 35 : 40)
+  : 60;
 const padRight = hasNm 
   ? (isMobile ? 70 : 60)   // 🔥 mehr Platz rechts
   : (isMobile ? 20 : 20);
@@ -916,7 +916,7 @@ const bottom = padBottom;
     if(hasNm){
       ctx.fillStyle = "#00eaff";
       ctx.textAlign = "left";
-      ctx.fillText(v, left + w + (isMobile ? 12 : 14), yp + 4);
+      ctx.fillText(v, left + w + (isMobile ? 8 : 10), yp + 4);
     }
   }
 
