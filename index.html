@@ -830,10 +830,12 @@ const fontSmall = isMobile ? 8 : 11;
 const fontBold = isMobile ? "bold 9px Arial" : "bold 11px Arial";
 
 // 🔥 MEHR PLATZ FÜR PS / NM
-const padLeft = 60;
+const padLeft = isMobile 
+  ? (isPortrait ? 35 : 40)
+  : 60;
 const padRight = hasNm 
-  ? (isMobile ? 45 : 60)
-  : (isMobile ? 15 : 20);
+  ? (isMobile ? 70 : 60)   // 🔥 mehr Platz rechts
+  : (isMobile ? 20 : 20);
 const padTop = 20;
 const padBottom = 55;
 
@@ -914,7 +916,7 @@ const bottom = padBottom;
     if(hasNm){
       ctx.fillStyle = "#00eaff";
       ctx.textAlign = "left";
-      ctx.fillText(v, left + w + (isMobile ? 4 : 6), yp + 4);
+      ctx.fillText(v, left + w + (isMobile ? 8 : 10), yp + 4);
     }
   }
 
