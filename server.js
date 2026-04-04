@@ -6,7 +6,6 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-const fetch = require("node-fetch");
 
 const CLIENT_ID = "AZos8lLQUzQzwb89Mr61UvtaAQeOJmIEMthfdnLua7wHRPiEweESTKNLlKm2TsycvE3uaD-KLHt66rAn";
 const SECRET = "EIW6b7FXrIZ4YiWWbgArgnWzfRkCUoeMW7iXuGbd_cFBCxP7Cyv4ubYJICPorFhUr3YYad9PMNDGuXem";
